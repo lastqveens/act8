@@ -1,125 +1,132 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart'; // Import the just_audio package
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: HalloweenGame(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class HalloweenGame extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _HalloweenGameState createState() => _HalloweenGameState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HalloweenGameState extends State<HalloweenGame> {
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Audio player instance
+  bool _isVisible = true;
+  bool gameOver = false;
+  bool isWinner = false;
 
-  void _incrementCounter() {
+  // List of Halloween characters with their positions
+  final List<_SpookyCharacter> _characters = [
+    _SpookyCharacter(name: 'Ghost', imagePath: 'assets/ghost.png', isCorrect: false),
+    _SpookyCharacter(name: 'Pumpkin', imagePath: 'assets/pumpkin.png', isCorrect: true), // This is the correct item
+    _SpookyCharacter(name: 'Bat', imagePath: 'assets/bat.png', isCorrect: false),
+  ];
+@override
+void initState() {
+    super.initState();
+    _playBackgroundMusic(); // Play background music when the game starts
+  }
+  // Function to handle item selection and play sound effects
+  void handleItemSelected(bool isCorrect) async {
+    if (isCorrect) {
+      // Play success sound
+      await _audioPlayer.setAsset('assets/success_sound.mp3');
+      _audioPlayer.play();
+      setState(() {
+        isWinner = true;
+        gameOver = true;
+      });
+    } else {
+      // Play spooky sound
+      await _audioPlayer.setAsset('assets/spooky_sound.mp3');
+      _audioPlayer.play();
+      setState(() {
+        gameOver = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose(); // Dispose of the audio player
+    super.dispose();
+  }
+  // Function to play looping background music
+  void _playBackgroundMusic() async {
+    await _audioPlayer.setAsset('assets/bg.mp3');
+    _audioPlayer.setLoopMode(LoopMode.one); // Loop the background music
+    _audioPlayer.play();
+  }
+
+  // Function to randomly toggle visibility
+  void toggleVisibility() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isVisible = !_isVisible;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Halloween Game'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Stack(
+        children: [
+          // Iterate through spooky characters and display them
+          for (var character in _characters)
+            AnimatedPositioned(
+              duration: Duration(seconds: 3),
+              left: Random().nextDouble() * MediaQuery.of(context).size.width,
+              top: Random().nextDouble() * MediaQuery.of(context).size.height,
+              child: GestureDetector(
+                onTap: () => handleItemSelected(character.isCorrect),
+                child: AnimatedOpacity(
+                  opacity: _isVisible ? 1.0 : 0.0,
+                  duration: Duration(seconds: 1),
+                  child: Image.asset(
+                    character.imagePath,
+                    width: 100,
+                    height: 100,
+                  ),
+                ),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          // Show the game result
+          if (gameOver)
+            Center(
+              child: isWinner
+                  ? Text('Congratulations! You found the correct item!',
+                      style: TextStyle(fontSize: 24, color: Colors.green))
+                  : Text('Spooky! You selected the wrong item!',
+                      style: TextStyle(fontSize: 24, color: Colors.red)),
             ),
-          ],
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        onPressed: toggleVisibility,
+        child: Icon(Icons.play_arrow),
+      ),
     );
   }
+}
+
+// Helper class to represent a spooky character
+class _SpookyCharacter {
+  final String name;
+  final String imagePath;
+  final bool isCorrect;
+
+  _SpookyCharacter({required this.name, required this.imagePath, required this.isCorrect});
 }
