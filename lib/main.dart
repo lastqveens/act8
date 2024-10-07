@@ -28,9 +28,9 @@ class _HalloweenGameState extends State<HalloweenGame> {
 
   // List of Halloween characters with their positions
   final List<_SpookyCharacter> _characters = [
-    _SpookyCharacter(name: 'Ghost', imagePath: 'assets/ghost.png', isCorrect: false),
-    _SpookyCharacter(name: 'Pumpkin', imagePath: 'assets/pumpkin.png', isCorrect: true), // This is the correct item
-    _SpookyCharacter(name: 'Bat', imagePath: 'assets/bat.png', isCorrect: false),
+    _SpookyCharacter(name: 'Ghost', imagePath: 'assets/SpookyGhost.jpeg', isCorrect: false),
+    _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton.jpg', isCorrect: true), // This is the correct item
+    _SpookyCharacter(name: 'Dog', imagePath: 'assets/scarydog.png', isCorrect: false),
   ];
 @override
 void initState() {
@@ -41,7 +41,7 @@ void initState() {
   void handleItemSelected(bool isCorrect) async {
     if (isCorrect) {
       // Play success sound
-      await _audioPlayer.setAsset('assets/success_sound.mp3');
+      await _audioPlayer.setAsset('assets/success_sound.wav');
       _audioPlayer.play();
       setState(() {
         isWinner = true;
@@ -49,7 +49,7 @@ void initState() {
       });
     } else {
       // Play spooky sound
-      await _audioPlayer.setAsset('assets/spooky_sound.mp3');
+      await _audioPlayer.setAsset('assets/spooky_sound.wav');
       _audioPlayer.play();
       setState(() {
         gameOver = true;
