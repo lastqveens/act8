@@ -21,7 +21,9 @@ class HalloweenGame extends StatefulWidget {
 }
 
 class _HalloweenGameState extends State<HalloweenGame> {
-  final AudioPlayer _audioPlayer = AudioPlayer(); // Audio player instance
+  final AudioPlayer _audioPlayer = AudioPlayer(); // For sound effects
+  final AudioPlayer _backgroundPlayer = AudioPlayer(); // For background music
+
   bool _isVisible = true;
   bool gameOver = false;
   bool isWinner = false;
@@ -32,11 +34,13 @@ class _HalloweenGameState extends State<HalloweenGame> {
     _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton.jpg', isCorrect: true), // This is the correct item
     _SpookyCharacter(name: 'Dog', imagePath: 'assets/scarydog.png', isCorrect: false),
   ];
-@override
-void initState() {
+
+  @override
+  void initState() {
     super.initState();
     _playBackgroundMusic(); // Play background music when the game starts
   }
+
   // Function to handle item selection and play sound effects
   void handleItemSelected(bool isCorrect) async {
     if (isCorrect) {
@@ -57,16 +61,23 @@ void initState() {
     }
   }
 
+  // Play looping background music
+  Future<void> _playBackgroundMusic() async {
+    try {
+      await _backgroundPlayer.setAsset('assets/bg.mp3');
+      _backgroundPlayer.setLoopMode(LoopMode.one); // Loop the background music
+      _backgroundPlayer.setVolume(1.0); // Ensure volume is at max
+      _backgroundPlayer.play();
+    } catch (e) {
+      print("Error playing background music: $e");
+    }
+  }
+
   @override
   void dispose() {
-    _audioPlayer.dispose(); // Dispose of the audio player
+    _audioPlayer.dispose(); // Dispose the audio player for sound effects
+    _backgroundPlayer.dispose(); // Dispose the background music player
     super.dispose();
-  }
-  // Function to play looping background music
-  void _playBackgroundMusic() async {
-    await _audioPlayer.setAsset('assets/bg.mp3');
-    _audioPlayer.setLoopMode(LoopMode.one); // Loop the background music
-    _audioPlayer.play();
   }
 
   // Function to randomly toggle visibility
