@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart'; // Import the just_audio package
@@ -24,27 +25,52 @@ class _HalloweenGameState extends State<HalloweenGame> {
   final AudioPlayer _audioPlayer = AudioPlayer(); // For sound effects
   final AudioPlayer _backgroundPlayer = AudioPlayer(); // For background music
 
-  bool _isVisible = true;
   bool gameOver = false;
   bool isWinner = false;
+  bool _isPlaying = false; // Tracks if the play button has been hit
 
-  // List of Halloween characters with their positions
+  // List to hold the positions of each character
+  List<Offset> _characterPositions = [];
+
+  // List of Halloween characters
   final List<_SpookyCharacter> _characters = [
-    _SpookyCharacter(name: 'Ghost', imagePath: 'assets/SpookyGhost.jpeg', isCorrect: false),
-    _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton.jpg', isCorrect: true), // This is the correct item
+    _SpookyCharacter(name: 'Ghost', imagePath: 'assets/SpookyGhost.png', isCorrect: false),
+    _SpookyCharacter(name: 'Skeleton', imagePath: 'assets/GhostSkeleton.png', isCorrect: true),
     _SpookyCharacter(name: 'Dog', imagePath: 'assets/scarydog.png', isCorrect: false),
   ];
+
+  // Timer to move characters continuously
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _playBackgroundMusic(); // Play background music when the game starts
+    // Initialize music and game logic, but avoid MediaQuery-related code
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Move character position initialization here
+    _initializePositions();
+  }
+
+  // Initialize character positions based on screen size using MediaQuery
+  void _initializePositions() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    _characterPositions = List.generate(_characters.length, (index) {
+      return Offset(
+        Random().nextDouble() * (screenWidth - 100), // Adjust based on screen width
+        Random().nextDouble() * (screenHeight - 200), // Adjust based on screen height
+      );
+    });
   }
 
   // Function to handle item selection and play sound effects
   void handleItemSelected(bool isCorrect) async {
     if (isCorrect) {
-      // Play success sound
       await _audioPlayer.setAsset('assets/success_sound.wav');
       _audioPlayer.play();
       setState(() {
@@ -52,7 +78,6 @@ class _HalloweenGameState extends State<HalloweenGame> {
         gameOver = true;
       });
     } else {
-      // Play spooky sound
       await _audioPlayer.setAsset('assets/spooky_sound.wav');
       _audioPlayer.play();
       setState(() {
@@ -73,44 +98,65 @@ class _HalloweenGameState extends State<HalloweenGame> {
     }
   }
 
+  // Start floating characters with continuous movement
+  void _startFloatingCharacters() {
+    if (_timer == null || !_timer!.isActive) {
+      _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+        setState(() {
+          // Update positions randomly for each character
+          _initializePositions();
+        });
+      });
+    }
+  }
+
+  // Function to handle the play button and start floating
+  void toggleVisibility() {
+    setState(() {
+      _isPlaying = !_isPlaying; // Toggle play/pause state
+    });
+
+    if (_isPlaying) {
+      _startFloatingCharacters(); // Start floating when play is pressed
+      _playBackgroundMusic(); // Play background music when play is pressed
+    } else {
+      _timer?.cancel(); // Stop floating when play is pressed again
+      _backgroundPlayer.stop(); // Stop background music
+    }
+  }
+
   @override
   void dispose() {
     _audioPlayer.dispose(); // Dispose the audio player for sound effects
     _backgroundPlayer.dispose(); // Dispose the background music player
+    _timer?.cancel(); // Stop the timer when the widget is disposed
     super.dispose();
-  }
-
-  // Function to randomly toggle visibility
-  void toggleVisibility() {
-    setState(() {
-      _isVisible = !_isVisible;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Set the background color to black
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text('Halloween Game'),
+        // Set the AppBar color to orange
+        backgroundColor: Colors.orange,
       ),
       body: Stack(
         children: [
-          // Iterate through spooky characters and display them
-          for (var character in _characters)
+          // Iterate through spooky characters and display them at their floating positions
+          for (int i = 0; i < _characters.length; i++)
             AnimatedPositioned(
-              duration: Duration(seconds: 3),
-              left: Random().nextDouble() * MediaQuery.of(context).size.width,
-              top: Random().nextDouble() * MediaQuery.of(context).size.height,
+              duration: Duration(seconds: 2), // Movement animation duration
+              left: _characterPositions[i].dx,
+              top: _characterPositions[i].dy,
               child: GestureDetector(
-                onTap: () => handleItemSelected(character.isCorrect),
-                child: AnimatedOpacity(
-                  opacity: _isVisible ? 1.0 : 0.0,
-                  duration: Duration(seconds: 1),
-                  child: Image.asset(
-                    character.imagePath,
-                    width: 100,
-                    height: 100,
-                  ),
+                onTap: () => handleItemSelected(_characters[i].isCorrect),
+                child: Image.asset(
+                  _characters[i].imagePath,
+                  width: 100,
+                  height: 100,
                 ),
               ),
             ),
@@ -127,7 +173,9 @@ class _HalloweenGameState extends State<HalloweenGame> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: toggleVisibility,
-        child: Icon(Icons.play_arrow),
+        // Set the FloatingActionButton color to orange
+        backgroundColor: Colors.orange,
+        child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow), // Toggle play/pause icon
       ),
     );
   }
